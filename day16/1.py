@@ -6,7 +6,6 @@ with open(0) as file:
 grid = []
 end = ()
 start = ()
-dir = (0,1)
 
 for i,line in enumerate(content.splitlines()):
     for j,c in enumerate(line):
@@ -16,72 +15,28 @@ for i,line in enumerate(content.splitlines()):
             end = (i,j)
     grid.append(list(line))
 
-# dikstra from start to end
+dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]
 
-dirs = [(0,1),(0,-1),(1,0),(-1,0)]
-turns = {
-    (0,1): [(1,0),(-1,0)],
-    (0,-1): [(1,0),(-1,0)],
-    (1,0): [(0,1),(0,-1)],
-    (-1,0): [(0,1),(0,-1)]
-}
+def dikjstra(grid, start, end):
+    queue = [(0, start[0], start[1], 0)]
+    visited = set()
 
-def is_bound(i, j):
-    if i < 0 or i >= len(grid) or j < 0 or j >= len(grid[0]):
-        return False
-    return True
+    while queue:
+        cost, x, y, d = heappop(queue)
 
-visited = set()
-pq = []
-heappush(pq, (0, start, dir))
+        if (x, y) == end:
+            return cost
 
-cost = {}
-parent = {}
-cost[(start, dir)] = 0
+        if (x, y, d) in visited:
+            continue
+        visited.add((x, y, d))
 
-def reconstruct_path(parent, start, end, final_direction):
-    path = []
-    current = (end[0], end[1], final_direction)
-    
-    while current in parent:
-        path.append((current[0], current[1]))
-        current = parent[current]
-    
-    path.append(start) 
-    path.reverse() 
+        nx, ny = x + dirs[d][0], y + dirs[d][1]
+        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]) and grid[nx][ny] != "#":
+            heappush(queue, (cost + 1, nx, ny, d))
 
-    for i in range(len(grid)):
-        for j in range(len(grid[0])):
-            if (i,j) in path:
-                print('X', end='')
-            else:
-                print(grid[i][j], end='')
-        print()
+        for nd in [(d - 1) % 4, (d + 1) % 4]:
+            heappush(queue, (cost + 1000, x, y, nd))
 
-    return len(path) - 1, path
-
-while pq:
-    curr_cost, pos, curr_dir = heappop(pq)
-
-    if pos == end:
-        print(reconstruct_path(parent, start, end, curr_dir))
-        break
-
-    if cost.get((pos, curr_dir), float('inf')) < curr_cost:
-        continue
-
-    dx,dy = curr_dir
-    nx, ny = pos[0]+dx, pos[1]+dy
-
-    if is_bound(nx, ny):
-        if grid[nx][ny] != '#':
-            if curr_cost + 1 < cost.get(((nx,ny), curr_dir), float('inf')):
-                cost[((nx,ny), curr_dir)] = curr_cost + 1
-                parent[(nx, ny, curr_dir)] = (pos[0], pos[1], curr_dir)
-                heappush(pq, (curr_cost+1, (nx,ny), curr_dir))
-        else:
-            for t in turns[curr_dir]:
-                if curr_cost + 1 < cost.get((pos, t), float('inf')):
-                    cost[(pos, t)] = curr_cost + 1
-                    parent[(pos[0], pos[1], t)] = (pos[0], pos[1], curr_dir)
-                    heappush(pq, (curr_cost+1, pos, t))
+print(start, end)
+print(dikjstra(grid, start, end))
